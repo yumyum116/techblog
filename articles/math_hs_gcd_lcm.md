@@ -1,5 +1,5 @@
 ---
-title: "アルゴリズムの裏に潜む高校数学 \\
+title: "アルゴリズムの裏に潜む高校数学 \n
              vol.1 : 最大公約数と最小公倍数"
 emoji: ":Wolf"
 type: "tech" # tech: 技術記事 / idea: アイデア
