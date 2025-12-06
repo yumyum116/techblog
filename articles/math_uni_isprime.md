@@ -1,10 +1,10 @@
 ---
 title: "アルゴリズムの裏に潜む大学数学 \n
              vol.1 : 素数を判定する"
-emoji: ":Wolf"
+emoji: "Wolf"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [python3, algorithm, prime, 素数]
-published: false
+published: true
 ---
 
 > アドベントカレンダー（自称）vol.6
