@@ -1,6 +1,6 @@
 ---
-title: "アルゴリズムの裏に潜む高校数学"
-emoji: ":wolf"
+title: "アルゴリズムの裏に潜む高校数学 ver.1 : 最大公約数と最小公倍数"
+emoji: ":Wolf"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [python3, algorithm, gcd, lcm]
 published: true
@@ -57,7 +57,7 @@ def calculate_gcd(a, b):
         if prime in factorize_b:
             exponential = min(exponential, factorize_b[prime])
             factorize_gcd[prime] = exponential
-            
+
     gcd = 1
     for factor in factorize_gcd:
         exponential = factorize_gcd[factor]
@@ -77,7 +77,7 @@ def calculate_lcm(a, b):
         if prime in factorize_b:
             exponential = max(exponential, factorize_b[prime])
             factorize_lcm[prime] = exponential
-            
+
     lcm = 1
     for factor in factorize_lcm:
         exponential = factorize_lcm[factor]
