@@ -3,7 +3,7 @@ title: "オーバーヘッドはプログラムの実行時間にどの程度影
 emoji: "🐺"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [python3, C, C#, overhead]
-published: false
+published: true
 ---
 
 > アドベントカレンダー（自称）vol.7
