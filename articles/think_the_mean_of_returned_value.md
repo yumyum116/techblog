@@ -23,23 +23,14 @@ published: true
 この問題を解くアルゴリズムは、二分探索の考え方を用いて、次のように書くことができます。
 
 ```js:calculate_max_of_min.py
-def calculate_max_of_min(array, left, right, length, k):
-	array.append(length)
-
+def calculate_max_of_min(length, n):
 	left = 0
 	right = length + 1
 
-
-	while right - left != 1:
+	while right - left > 1:
 		mid = (left + right) // 2
 
-		last = 0
-		count = 0
-
-		for i in range(k + 1):
-			if a[i] - last >= mid:
-				last = a[i]
-				count += 1
+		count = length // min
 
 		if count >= n:
 			left = mid
@@ -47,7 +38,6 @@ def calculate_max_of_min(array, left, right, length, k):
 			right = mid
 
 	return left
-
 ```
 
 このプログラムを読んで、頭の中が混乱しなかった方は、おそらくこの記事でこれから述べる内容を十分に理解できていると思うので、他のことに時間をお使いください。
@@ -73,8 +63,8 @@ def calculate_max_of_min(array, left, right, length, k):
 
 求めたい境界値を $k$ とした場合に、二分探索アルゴリズムは一般に次のように実装できます。
 
-```
-def binary_search(k):
+```python
+def binary_search(array, k):
 	left = 0
 	right = length
 
@@ -88,7 +78,6 @@ def binary_search(k):
 			left = mid + 1
 
 	return -1
-
 ```
 
 ## 3. 分かると嬉しい値を考える
@@ -143,23 +132,14 @@ def binary_search(k):
 ここまで整理した上で、冒頭に書いたプログラムを改めて見てみましょう。
 
 ```js:calculate_max_of_min.py
-def calculate_max_of_min(array, left, right, length, k):
-	array.append(length)
-
+def calculate_max_of_min(length, n):
 	left = 0
 	right = length + 1
 
-	# 二分探索
 	while right - left != 1:
 		mid = (left + right) // 2
 
-		last = 0
-		count = 0
-
-		for i in range(k + 1):
-			if a[i] - last >= mid:
-				last = a[i]
-				count += 1
+		count = length // min
 
 		if count >= n:
 			left = mid
@@ -167,7 +147,6 @@ def calculate_max_of_min(array, left, right, length, k):
 			right = mid
 
 	return left
-
 ```
 
 あら不思議。呪文のように見えていたプログラムが、急にシンプルでスマートなプログラムに見えてきました。
