@@ -117,7 +117,7 @@ def calculate_gcd_euclidean(a, b):
 	if b == 0:
 		return a
 
-	return calculate_gcd_euclidean(b, a%b)
+	return calculate_gcd_euclidean(b, a % b)
 ```
 
 さて、python のオリジナルコードではどのように実装されているのでしょうか。
