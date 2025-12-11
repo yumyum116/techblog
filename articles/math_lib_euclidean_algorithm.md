@@ -3,7 +3,7 @@ title: "math.gcd の正体は何なのか"
 emoji: "🐺"
 type: "idea" # tech: 技術記事 / idea: アイデア
 topics: [python3, algorithm, 最大公約数, ユークリッド互助法]
-published: false
+published: true
 ---
 
 > アドベントカレンダー（自称）vol.11
