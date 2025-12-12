@@ -20,94 +20,75 @@ published: false
 そこで、今回は、python の組み込み関数である print 関数について取り上げ、**なぜ print 関数の呼び出し回数が多いと TLE になるのか** について迫ります。
 
 
-## 1. print 関数では、何が起きているのか
-python の print 関数は標準ライブラリではなく、組み込み関数です。
-組み込み関数は、CPython 本体の Cソースコードで定義されます。print 関数の実体は [こちら](https://github.com/python/cpython/blob/v3.11.2/Python/bltinmodule.c#L1986)から確認できます。print 関数に該当する部分は、`builtin_print_impl`です。
+## 1. アルゴリズムの時間計算量は最適化されていても、TLEになる例
+以下に、**アルゴリズムの時間計算量は最適化されていたものの、TLE になったプログラム**をご紹介します。
+`エラトステネスのふるい`を用いて、素数判定を行うプログラムです。どこが原因で TLE になったか、想像がつくでしょうか？
 
-話を分かりやすくするため、中身を以下に貼付します。
+補足すると、標準入力として渡される値は、次の条件を満たします。
 
-```js:builtinmodule.c
-static PyObject *
-builtin_print_impl(PyObject *module, PyObject *args, PyObject *sep,
-                   PyObject *end, PyObject *file, int flush)
-/*[clinic end generated code: output=3cfc0940f5bc237b input=c143c575d24fe665]*/
-{
-    int i, err;
+> 条件
+> $ 1 <= n <= 380,000$
+> $ 1 <= array[i] <= 6,000,000 (1 <= i <= n) $
 
-    if (file == Py_None) {
-        PyThreadState *tstate = _PyThreadState_GET();
-        file = _PySys_GetAttr(tstate, &_Py_ID(stdout));
-        if (file == NULL) {
-            PyErr_SetString(PyExc_RuntimeError, "lost sys.stdout");
-            return NULL;
-        }
 
-        /* sys.stdout may be None when FILE* stdout isn't connected */
-        if (file == Py_None) {
-            Py_RETURN_NONE;
-        }
-    }
+```js:etatosthenes_tle.py
+#! /usr/bin/env python
 
-    if (sep == Py_None) {
-        sep = NULL;
-    }
-    else if (sep && !PyUnicode_Check(sep)) {
-        PyErr_Format(PyExc_TypeError,
-                     "sep must be None or a string, not %.200s",
-                     Py_TYPE(sep)->tp_name);
-        return NULL;
-    }
-    if (end == Py_None) {
-        end = NULL;
-    }
-    else if (end && !PyUnicode_Check(end)) {
-        PyErr_Format(PyExc_TypeError,
-                     "end must be None or a string, not %.200s",
-                     Py_TYPE(end)->tp_name);
-        return NULL;
-    }
+MAX_A = 6000000
 
-    for (i = 0; i < PyTuple_GET_SIZE(args); i++) {
-        if (i > 0) {
-            if (sep == NULL) {
-                err = PyFile_WriteString(" ", file);
-            }
-            else {
-                err = PyFile_WriteObject(sep, file, Py_PRINT_RAW);
-            }
-            if (err) {
-                return NULL;
-            }
-        }
-        err = PyFile_WriteObject(PyTuple_GET_ITEM(args, i), file, Py_PRINT_RAW);
-        if (err) {
-            return NULL;
-        }
-    }
+def eratosthenes(n):
+    is_prime = [True] * (n + 1)
+    is_prime[0] = is_prime[1] = False
 
-    if (end == NULL) {
-        err = PyFile_WriteString("\n", file);
-    }
-    else {
-        err = PyFile_WriteObject(end, file, Py_PRINT_RAW);
-    }
-    if (err) {
-        return NULL;
-    }
+    for i in range(2, int(n ** 0.5) + 1):
+        if is_prime[i]:
+            for j in range(i * i, n + 1, i):
+                is_prime[j] = False
 
-    if (flush) {
-        PyObject *tmp = PyObject_CallMethodNoArgs(file, &_Py_ID(flush));
-        if (tmp == NULL) {
-            return NULL;
-        }
-        Py_DECREF(tmp);
-    }
+    return is_prime
 
-    Py_RETURN_NONE;
-}
+n = int(input())
+arr = [int(input()) for _ in range(n)]
+
+for i in range(n):
+    print("prime" if is_prime(arr[i]) else "not prime")
 ```
 
-まず、python のコードが実行されてからの流れを説明します。
+次に、TLE を解消したプログラムをご紹介します。
+
+```js:eratosthenes.py
+#! /usr/bin/env python
+
+MAX_A = 6000000
+
+def eratosthenes(n):
+    is_prime = [True] * (n + 1)
+    is_prime[0] = is_prime[1] = False
+
+    for i in range(2, int(n ** 0.5) + 1):
+        if is_prime[i]:
+            for j in range(i * i, n + 1, i):
+                is_prime[j] = False
+
+    return is_prime
+
+n = int(input())
+arr = [int(input()) for _ in range(n)]
+
+is_prime_table = eratosthenes(MAX_A)
+
+out = []
+for x in arr:
+    out.append("pass" if is_prime_table[x] else "failure")
+
+print("\n".join(out))
+```
+
+さて、次章で TLE の原因を紐解いていきます。
+
+## 2. python のプログラムを実行すると、何が起こっているのか
+本題に移る前に、python プログラムを実行した時の処理の流れを説明します。
+長くなりますが、お付き合いください。
 
 1. python プログラム（.py）を実行する
 ---python インタプリタ---
@@ -268,10 +249,338 @@ Python インタプリタが生成するバイトコードは、スタックマ�
 | CALL          1                      | スタックの上から、argc で指定された個数分の引数を取得し、呼び出し可能な関数を呼び出す |
 | RETURN_VALUE                         | 呼び出し元に戻る                                                           |
 
-仮想マシンでは、このバイトコードを上から順に実行し、実行結果をスタックに格納する処理が行われています。
+仮想マシンでは、このバイトコードを上から順に実行し、生成された Python オブジェクトをスタックに格納する処理を実行しています。
 
 ### CPU が機械語を実行する
-CPUはメモリにコピーされたプログラムを実行します。このプログラムには、コンピュータに実行させたい命令が、「機械語」と呼ばれる形式で書かれています。
+CPUはメモリにコピーされたプログラムを実行します。Python の場合には、python の仮想マシンの機械語を実行しています。
+
+機械語について簡単に説明します。
+
 機械語では、0 と 1 のみを組合せた２進数の値を使って、命令を表現します。
 人間が理解できる形式で記述する場合には、16進数が使われます。興味がある方は、`.pyc`ファイルをバイナリエディタで開いてみるとよいと思います。
+
+test.py の場合は次のようになります。（※人間が読むことのできる16進数で表現されており、CPUが実際に実行する機械語とは異なります）
+
+![](images/tle_io/machinery_lang.png)
+
+話を戻します。
+
+例えば、バイトコードの `CALL 1` は、実際には次のように表される「Cの switch 文の case」を呼び出す命令です。
+
+```
+switch (opcode){
+    case CALL:
+    /* 引数を取り出して関数呼び出し */
+}
+```
+仮想マシンから CPU の実行までの流れを正確に表現するならば、
+
+> Cpython の C実装において、`CALL 1` の命令コードを読み取り、
+switch(opcode) の `case CALL:` に分岐し、
+CPUにおいては、その `case CALL:` に対応する CPython 自体の機械語を実行する
+
+となります。
+
+呼び出す関数としては、python レイヤでは print と記述していますが、呼び出される実体はCPython のC実装であり、`builtin_print_impl` に該当します。
+
+ここまでが、python プログラムを実行した際に行われる処理の流れです。
+
+
+## 3. print 関数では、何が起きているのか
+さて、話を戻して print 関数の挙動について考えてみます。
+
+print関数について簡単に説明すると、python の標準ライブラリではなく、組み込み関数です。
+組み込み関数は、CPython 本体の Cソースコードで定義されます。print 関数の実体は [こちら](https://github.com/python/cpython/blob/v3.11.2/Python/bltinmodule.c#L1986)から確認できます。print 関数に該当する部分は、前述の通り `builtin_print_impl`です。
+
+話を分かりやすくするため、中身を以下に貼付します。
+
+```js:builtinmodule.c
+static PyObject *
+builtin_print_impl(PyObject *module, PyObject *args, PyObject *sep,
+                   PyObject *end, PyObject *file, int flush)
+/*[clinic end generated code: output=3cfc0940f5bc237b input=c143c575d24fe665]*/
+{
+    int i, err;
+
+    if (file == Py_None) {
+        PyThreadState *tstate = _PyThreadState_GET();
+        file = _PySys_GetAttr(tstate, &_Py_ID(stdout));
+        if (file == NULL) {
+            PyErr_SetString(PyExc_RuntimeError, "lost sys.stdout");
+            return NULL;
+        }
+
+        /* sys.stdout may be None when FILE* stdout isn't connected */
+        if (file == Py_None) {
+            Py_RETURN_NONE;
+        }
+    }
+
+    if (sep == Py_None) {
+        sep = NULL;
+    }
+    else if (sep && !PyUnicode_Check(sep)) {
+        PyErr_Format(PyExc_TypeError,
+                     "sep must be None or a string, not %.200s",
+                     Py_TYPE(sep)->tp_name);
+        return NULL;
+    }
+    if (end == Py_None) {
+        end = NULL;
+    }
+    else if (end && !PyUnicode_Check(end)) {
+        PyErr_Format(PyExc_TypeError,
+                     "end must be None or a string, not %.200s",
+                     Py_TYPE(end)->tp_name);
+        return NULL;
+    }
+
+    for (i = 0; i < PyTuple_GET_SIZE(args); i++) {
+        if (i > 0) {
+            if (sep == NULL) {
+                err = PyFile_WriteString(" ", file);
+            }
+            else {
+                err = PyFile_WriteObject(sep, file, Py_PRINT_RAW);
+            }
+            if (err) {
+                return NULL;
+            }
+        }
+        err = PyFile_WriteObject(PyTuple_GET_ITEM(args, i), file, Py_PRINT_RAW);
+        if (err) {
+            return NULL;
+        }
+    }
+
+    if (end == NULL) {
+        err = PyFile_WriteString("\n", file);
+    }
+    else {
+        err = PyFile_WriteObject(end, file, Py_PRINT_RAW);
+    }
+    if (err) {
+        return NULL;
+    }
+
+    if (flush) {
+        PyObject *tmp = PyObject_CallMethodNoArgs(file, &_Py_ID(flush));
+        if (tmp == NULL) {
+            return NULL;
+        }
+        Py_DECREF(tmp);
+    }
+
+    Py_RETURN_NONE;
+}
+```
+
+print 関数においては、次の流れで標準出力に文字が表示されます。
+
+1. Python コードを実行する
+2. Python バイトコードを生成する
+---ここまでが Python レイヤ ---
+3. CPython の VM を実行する
+4. builtin print を呼び出す
+5. file.write() を呼び出す
+6. libc write() を呼び出す
+7. OS カーネル syscall を呼び出す
+8. 標準出力に出力する
+
+前章との繋がりが読み取りにくいため、各処理の説明に移る前に、少し補足します。
+上記の流れは、表の動きを追った表現であり、CPU はずっと稼働しています。
+
+CPU視点で書き直すと
+
+>CPython の仮想マシンを構成する C の機械語を
+CPU が実行している最中に、
+CALL 命令に対応する処理として builtin print の機械語が呼ばれ、
+その処理の中で PyFile_WriteObject → FileIO.write → write syscall
+へと **CPU の実行対象が遷移していく**
+
+イメージです。
+
+図示すると次のように表されます。
+
+```
+CPU
+ └─ CPython VM（機械語）
+      └─ builtin print（機械語）
+           └─ PyFile_WriteObject（機械語）
+                └─ FileIO.write（機械語）
+                     └─ libc write（機械語）
+                          └─ kernel write（機械語）
+```
+
+さて、ここまで整理できたところで、いよいよ print 関数の処理の説明に移ります。
+1, 2, 3 は前章で触れた部分のため割愛します。ここでは、4以降の流れを追っていきます。
+
+### builtin print を呼び出す
+再三の繰り返しになりますが、実体としては
+
+```
+static PyObject *
+builtin_print_impl(PyObject *module, PyObject *args, PyObject *sep,
+                   PyObject *end, PyObject *file, int flush)
+```
+が呼ばれます。
+
+この時に実行されることは、次の３つです。
+
+> ①引数（PyObject*）を受け取る
+②`sep`, `end`, `file`, `flush` を解釈する
+③出力先 `file` を決定する（デフォルトは `sys.stdout`）
+
+### file.write() を呼び出す
+次のC実装により、python の file オブジェクトの write メソッドを呼び出しています。
+
+```
+PyFile_WriteObject(obj, file, Py_PRINT_RAW);
+```
+
+上記の `builtinmodule.c` の中では、次の部分が該当します。
+
+```
+PyFile_WriteObject(sep, file, Py_PRINT_RAW)
+```
+`sys.stdout.write(...)` と同等です。
+
+### libc write を呼び出す
+python の `sys.stdout` は、次のような多段ラップ構造になっています。
+
+```
+TextIOWrapper
+  └─ BufferedWriter
+       └─ FileIO
+```
+
+FileIO.write() の C実装は、`Module/_io/fileio.c` に記述されており、`_io_FileIO_write_impl` が該当する部分です。
+
+```js:cpython/Modules/_io/fileio.c
+/*[clinic input]
+_io.FileIO.write
+    cls: defining_class
+    b: Py_buffer
+    /
+
+Write buffer b to file, return number of bytes written.
+
+Only makes one system call, so not all of the data may be written.
+The number of bytes actually written is returned.  In non-blocking mode,
+returns None if the write would block.
+[clinic start generated code]*/
+
+static PyObject *
+_io_FileIO_write_impl(fileio *self, PyTypeObject *cls, Py_buffer *b)
+/*[clinic end generated code: output=927e25be80f3b77b input=2776314f043088f5]*/
+{
+    Py_ssize_t n;
+    int err;
+
+    if (self->fd < 0)
+        return err_closed();
+    if (!self->writable) {
+        _PyIO_State *state = get_io_state_by_cls(cls);
+        return err_mode(state, "writing");
+    }
+
+    n = _Py_write(self->fd, b->buf, b->len);
+    /* copy errno because PyBuffer_Release() can indirectly modify it */
+    err = errno;
+
+    if (n < 0) {
+        if (err == EAGAIN) {
+            PyErr_Clear();
+            Py_RETURN_NONE;
+        }
+        return NULL;
+    }
+
+    return PyLong_FromSsize_t(n);
+}
+```
+（[出典](https://github.com/python/cpython/blob/main/Modules/_io/fileio.c)）
+
+プロトタイプとしては、次のように表されます。
+
+```
+_Py_write(fd, buf, size)
+```
+
+この時点で、Python レイヤを抜けて C の I/O レイヤに入ります。
+
+### OS カーネル syscall を呼び出す
+print 関数の中では、ここが最も重い処理です。
+この syscall では、次の３つの処理を実行します。
+
+> ①ユーザ空間からカーネル空間へ委譲する
+②コンテキストスイッチを行う
+③OSが stdout を処理する
+
+#### ユーザ空間からカーネル空間へ委譲する
+これは、CPUの実行モードが切り替わることです。
+
+**ユーザ空間**とは、普通のアプリ（Python, CPython, libc）が動く場所であり、**デバイスやメモリには触れません。**
+**カーネル空間**とは、OS本体が動く場所で、デバイス操作、ファイル書き込み、プロセス管理などを実行することができます。
+
+print 関数は、デバイス操作を要求するため、ユーザ空間からカーネル空間に処理を委譲する必要があります。
+syscall(write)を呼ぶと発生すると捉えていただけるとよいと思います。
+
+#### コンテキストスイッチを行う
+CPUが「実行状態」を切り替えることです。
+
+コンテキストスイッチには、前述した (A) ユーザモードからカーネルモードへの切り替え と、(B) プロセス切り替え の2種類がありますが、print関数において重要なコンテキストスイッチは(A) です。
+
+syscall によるモード切替が、I/O が遅い最大の理由の一つです。
+
+#### OS が stdout を処理する
+簡潔に書くと、`「fd=1 に書きなさい」と言われた内容を、実際の出力先に届ける処理`です。
+
+stdout を処理するとは、概念的に表すと次のようになります。
+
+```
+sys_write(fd=1, buf)
+  ↓
+ファイル構造体を探す
+  ↓
+対応するデバイス or ファイルへ転送
+  ↓
+（必要ならバッファリング）
+
+```
+
+この一連の流れを、端的に表現するならば
+
+> print() によって CPython が write() を呼び、
+CPU が syscall によりユーザモードからカーネルモードへ切り替わり、
+OS が fd=1（stdout）の実体を解決して、
+端末・ファイル・パイプなどにデータを書き込む
+となります。
+
+このカーネル処理やデバイス I/O は、syscall のモード切替よりもさらに高コストです。
+
+### 標準出力に出力する
+カーネルから、実際の出力先（この場合は端末）に文字が届きます。
+
+## 4. TLE の理由は、for 文の中で毎回呼び出される print 関数だった
+まずはじめに、ここまでお読みいただいているあなたに、感謝の意を表したいと思います。
+ありがとうございます。
+
+そう、TLEの原因は見出しの通りです。
+
+具体的には、冒頭でご紹介したプログラムの次の実装が、TLEの引き金となっています。
+
+```
+for i in range(n):
+    print("prime" if is_prime(arr[i]) else "not prime")
+```
+
+このプログラムでは、インクリメント変数 $i$ が１増えるたびに print 関数が実行される設計になっています。
+ここまでご説明してきた、プログラムの実行の流れに照らして考えると、毎回カーネル処理とデバイス I/O が実行されていることになります。
+
+仮に、入力として渡される値の最大値が渡されたとすると、38万回 print 関数が呼び出されることになります。
+入力条件に対するアプローチが間違っているいい実例です。
+
+一方で、修正後のプログラムを見てみましょう。
+
 
