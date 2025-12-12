@@ -2,8 +2,8 @@
 title: "print 関数の呼び出しは負荷がかかるよ、という話"
 emoji: "🐺"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: [python3, print, built-in]
-published: false
+topics: [python3, print, eratosthenes, エラトステネスのふるい]
+published: true
 ---
 
 > アドベントカレンダー（自称）vol.12
