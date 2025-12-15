@@ -1,5 +1,5 @@
 ---
-title: "実装の違いによる実行時間の差を比較してみた"
+title: "繰り返し処理の実行範囲を最適化して、剰余演算を行わない設計にするだけで、プログラムの実行時間が125倍速くなった話"
 emoji: "🐺"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [python3, algorithm, goldbach, ゴールドバッハ予想]
