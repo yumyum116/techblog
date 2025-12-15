@@ -3,10 +3,11 @@ title: "プログラムを書き始める前に、数式でどのように表さ
 emoji: "🐺"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [python3, algorithm, goldbach, ゴールドバッハ予想]
-published: false
+published: true
 ---
 
 > アドベントカレンダー（自称）vol.13
+※2025年12月16日修正
 
 皆さん、こんにちは。yumyum116 です。SWE転職を目指す者です。
 アドベントカレンダーに便乗して、1日1記事投稿に挑戦するとともに、執筆活動の習慣化にも挑戦してみます。
@@ -54,18 +55,18 @@ def goldbach_conjecture(n):
             prime.append(i)
 
     prime_combi = []
-	for i in range(len(prime)):
+    for i in range(len(prime)):
         if n - prime[i] in prime:
             prime_combi.append([prime[i], n - prime[i]])
+    if not prime_combi:
+            return None
 
-	if not prime_combi:
-		return None
-
-    max_res = 1
+    max_res = -1
     max_idx = 0
     for j in range(len(prime_combi)):
-        max_res = max(prime_combi[j][0] * prime_combi[j][1], max_res)
-        if max_res != 1:
+        prod = prime_combi[j][0] * prime_combi[j][1]
+        if prod > max_res:      // 判定式で値の更新有無を確認しておらず、積が最大となるか判定できないため、修正しました。
+            max_res = prod
             max_idx = j
 
     return prime_combi[max_idx]
