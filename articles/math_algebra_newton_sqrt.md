@@ -3,7 +3,7 @@ title: "平方根をニュートン法により求めてみる"
 emoji: "🐺"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [python3, newton, sqrt]
-published: false
+published: true
 ---
 
 > アドベントカレンダー（自称）vol.16
