@@ -3,7 +3,7 @@ title: "Miller-Rabin 法を理解する"
 emoji: "🐺"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [python3, algorithm, miller-rabin, ミラーラビン素数判定法]
-published: false
+published: true
 ---
 
 > アドベントカレンダー（自称）vol.18
