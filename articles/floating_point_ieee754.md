@@ -1,12 +1,12 @@
 ---
-title: "Pythonにおける計算誤差・丸め誤差を理解する"
+title: "IEEE754を理解する"
 emoji: "🐺"
 type: "idea" # tech: 技術記事 / idea: アイデア
-topics: [python3, 計算誤差, 丸め誤差]
+topics: [python3, 計算誤差、丸め誤差、IEEE754]
 published: false
 ---
 
-> アドベントカレンダー（自称）vol.23
+> アドベントカレンダー（自称）vol.XX
 
 皆さん、こんにちは。yumyum116 です。SWE転職を目指す者です。
 アドベントカレンダーに便乗して、1日1記事投稿に挑戦するとともに、執筆活動の習慣化にも挑戦してみます。
